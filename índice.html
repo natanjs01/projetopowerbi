@@ -343,8 +343,7 @@
                 <div class="control-group">
                     <label for="reportSelect">Relatório</label>
                     <select id="reportSelect">
-                        <option value="kardex">BI - PAINEL KARDEX</option>
-                        <option value="pis_cofins">BI - PIS_COFINS_V1.0</option>
+                        <!-- Options serão geradas automaticamente pelo JavaScript -->
                     </select>
                 </div>
                 
@@ -401,14 +400,130 @@
     </div>
 
     <script>
+        // ===== CONFIGURAÇÃO DOS RELATÓRIOS POWER BI =====
+        // Para adicionar novos relatórios, simplesmente adicione uma nova entrada neste objeto
+        const POWERBI_REPORTS = {
+            kardex: {
+                id: 'd9ab6491-a30b-4466-80f6-cb6b6524204e',
+                title: 'BI - PAINEL KARDEX',
+                description: 'Controle de estoque e movimentações',
+                category: 'Logística',
+                dataSource: 'Sistema RMS',
+                updateFrequency: 'Atualização automática a cada 1 hora',
+                responsible: 'Equipe de BI - Controladoria'
+            },
+            pis_cofins: {
+                id: '65d15e80-fc34-4ecd-a3f2-bcbd206b5663',
+                title: 'BI - PIS_COFINS_V1.0',
+                description: 'Análise de PIS e COFINS',
+                category: 'Financeiro',
+                dataSource: 'Sistema Fiscal',
+                updateFrequency: 'Atualização automática a cada 4 horas',
+                responsible: 'Equipe de BI - Controladoria'
+            }
+            // Para adicionar novos relatórios, copie o formato acima:
+            // nome_relatorio: {
+            //     id: 'SEU-REPORT-ID-AQUI',
+            //     title: 'Título do Relatório',
+            //     description: 'Descrição do relatório',
+            //     category: 'Categoria',
+            //     dataSource: 'Fonte dos dados',
+            //     updateFrequency: 'Frequência de atualização',
+            //     responsible: 'Responsável'
+            // }
+        };
+
+        // Configurações globais do Power BI
+        const POWERBI_CONFIG = {
+            baseUrl: 'https://app.powerbi.com/reportEmbed',
+            ctid: '9b7f8a4a-312e-4ce9-9391-103c1c9a32a1',
+            autoAuth: true,
+            allowFullScreen: true
+        };
+
+        // Função para gerar URL do Power BI
+        function generatePowerBIUrl(reportId) {
+            return `${POWERBI_CONFIG.baseUrl}?reportId=${reportId}&autoAuth=${POWERBI_CONFIG.autoAuth}&ctid=${POWERBI_CONFIG.ctid}`;
+        }
+
         // Configuração inicial
         document.addEventListener('DOMContentLoaded', function() {
+            // Gera options do select dinamicamente
+            populateReportSelect();
+            
+            // Carrega o primeiro relatório
+            loadDefaultReport();
+            
             // Atualiza timestamp
             updateLastUpdateTime();
             
             // Configura atualização automática do timestamp
             setInterval(updateLastUpdateTime, 60000); // Atualiza a cada minuto
         });
+
+        // Função para popular o select de relatórios dinamicamente
+        function populateReportSelect() {
+            const select = document.getElementById('reportSelect');
+            select.innerHTML = ''; // Limpa options existentes
+            
+            Object.keys(POWERBI_REPORTS).forEach(key => {
+                const report = POWERBI_REPORTS[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = report.title;
+                option.title = `${report.description} (${report.category})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Função para carregar relatório padrão
+        function loadDefaultReport() {
+            const firstReportKey = Object.keys(POWERBI_REPORTS)[0];
+            if (firstReportKey) {
+                loadReport(firstReportKey);
+            }
+        }
+
+        // Função principal para carregar relatório
+        function loadReport(reportKey) {
+            const report = POWERBI_REPORTS[reportKey];
+            if (!report) {
+                console.error('Relatório não encontrado:', reportKey);
+                return;
+            }
+
+            // Atualiza iframe
+            const iframe = document.getElementById('powerbiFrame');
+            iframe.src = generatePowerBIUrl(report.id);
+            iframe.title = report.title;
+
+            // Atualiza título
+            document.querySelector('.report-title').textContent = report.title;
+
+            // Atualiza informações do painel
+            updateInfoPanel(report);
+
+            showNotification(`Carregando: ${report.title}`, 'info');
+        }
+
+        // Função para atualizar painel de informações
+        function updateInfoPanel(report) {
+            const infoPanel = document.querySelector('.info-panel');
+            if (infoPanel) {
+                infoPanel.innerHTML = `
+                    <h4>ℹ️ Informações do Relatório</h4>
+                    <ul>
+                        <li><strong>Última atualização:</strong> <span id="lastUpdate">Carregando...</span></li>
+                        <li><strong>Fonte de dados:</strong> ${report.dataSource}</li>
+                        <li><strong>Frequência:</strong> ${report.updateFrequency}</li>
+                        <li><strong>Responsável:</strong> ${report.responsible}</li>
+                        <li><strong>Categoria:</strong> ${report.category}</li>
+                        <li><strong>Descrição:</strong> ${report.description}</li>
+                    </ul>
+                `;
+                updateLastUpdateTime(); // Atualiza o timestamp
+            }
+        }
 
         function updateLastUpdateTime() {
             const now = new Date();
@@ -533,32 +648,52 @@
 
         // Listener para mudança de relatório
         document.getElementById('reportSelect').addEventListener('change', function() {
-            const selectedReport = this.value;
-            let newSrc = '';
-            let newTitle = '';
-            
-            // Aqui você pode adicionar diferentes URLs para diferentes relatórios
-            switch(selectedReport) {
-                case 'kardex':
-                    newSrc = 'https://app.powerbi.com/reportEmbed?reportId=d9ab6491-a30b-4466-80f6-cb6b6524204e&autoAuth=true&ctid=9b7f8a4a-312e-4ce9-9391-103c1c9a32a1';
-                    newTitle = 'BI - PAINEL KARDEX';
-                    break;
-                case 'pis_cofins':
-                    newSrc = 'https://app.powerbi.com/reportEmbed?reportId=65d15e80-fc34-4ecd-a3f2-bcbd206b5663&autoAuth=true&ctid=9b7f8a4a-312e-4ce9-9391-103c1c9a32a1';
-                    newTitle = 'BI - PIS_COFINS_V1.0';
-                    break;
-                default:
-                    newTitle = 'Relatório não encontrado';
-                    break;
-            }
-            
-            if (newSrc) {
-                document.getElementById('powerbiFrame').src = newSrc;
-            }
-            document.querySelector('.report-title').textContent = newTitle;
-            
-            showNotification(`Carregando: ${newTitle}`, 'info');
+            const selectedReportKey = this.value;
+            loadReport(selectedReportKey);
         });
     </script>
+
+    <!-- 
+    =====================================================================
+    📋 COMO ADICIONAR NOVOS RELATÓRIOS POWER BI
+    =====================================================================
+    
+    Para adicionar um novo relatório, siga estes passos:
+    
+    1. Localize o objeto POWERBI_REPORTS no início do JavaScript
+    
+    2. Adicione uma nova entrada seguindo este formato:
+    
+    nome_do_relatorio: {
+        id: 'SEU-REPORT-ID-DO-POWERBI',
+        title: 'Nome que aparecerá no select',
+        description: 'Descrição breve do relatório',
+        category: 'Categoria (ex: Financeiro, Vendas, etc)',
+        dataSource: 'Fonte dos dados',
+        updateFrequency: 'Com que frequência atualiza',
+        responsible: 'Quem é responsável'
+    }
+    
+    3. Exemplo prático:
+    
+    vendas_mensais: {
+        id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        title: 'Dashboard de Vendas Mensais',
+        description: 'Análise completa de vendas por mês',
+        category: 'Comercial',
+        dataSource: 'Sistema de Vendas',
+        updateFrequency: 'Atualização diária às 06:00',
+        responsible: 'Equipe Comercial'
+    }
+    
+    4. Salve o arquivo - o relatório aparecerá automaticamente no select!
+    
+    ⚠️ IMPORTANTE: 
+    - Use nomes únicos (sem espaços, use _ ou camelCase)
+    - O ID do relatório deve vir do Power BI
+    - Todos os campos são obrigatórios
+    
+    =====================================================================
+    -->
 </body>
 </html>
